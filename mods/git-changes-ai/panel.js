@@ -679,8 +679,13 @@ export class Panel {
         // An agent takes the whole prompt as one argument, so the diff gets what the instructions leave.
         const budget = p.provider === "agent" ? Math.max(1000, AGENT_PROMPT_LIMIT - (summary.length + 900)) : diff.length;
         const cut = diff.length > budget, text = cut ? diff.slice(0, budget) : diff;
-        const ask = (hint) => this.ai.askFull(ai, text, hint, summary).catch(() => ({ subject: "", body: "" }));
-        let { subject, body } = await ask(null);
+        // Keep what went wrong. Swallowing it makes every failure read as "the model said nothing",
+        // when the truth is a CLI that did not start, a missing key or a timeout.
+        let failed = null, answer = "";
+        const ask = (hint) => this.ai.askFull(ai, text, hint, summary).then(
+          (r) => { answer = r.raw || answer; return r; },
+          (e) => { failed = e; return { subject: "", body: "", raw: "", truncated: false }; });
+        let { subject, body, truncated: cutByPrompt } = await ask(null);
         if (!SUBJECT_SHAPE.test(subject)) {
           const fixed = await ask('Your answer was not a "type(scope): subject" line. Reply with only that line: one type from the list, a colon, then the subject.');
           if (SUBJECT_SHAPE.test(fixed.subject)) ({ subject, body } = fixed);
@@ -690,11 +695,18 @@ export class Panel {
           if (shorter.subject && (shorter.subject.length < subject.length || !SUBJECT_SHAPE.test(subject))) ({ subject, body } = shorter);
         }
         if (id !== this.aiGen || this.root !== root) return;
-        if (!subject) return this.fail(cx, "AI returned an empty message");
+        if (!subject) {
+          const why = failed
+            ? String(failed).replace(/^Error:\s*/, "")
+            : answer
+              ? `no "type(scope): subject" line in the answer: ${answer.trim().replace(/\s+/g, " ").slice(0, 90)}`
+              : "the model printed nothing";
+          return this.fail(cx, `AI: ${why}`);
+        }
         const full = body ? subject + "\n\n" + body : subject;
         this.editor.set_value(full); this.message = full;
         const notes = [];
-        if (truncated || cut) notes.push("The diff was cut to fit the model's input.");
+        if (truncated || cut || cutByPrompt) notes.push("The diff was cut to fit the model's input.");
         if (!SUBJECT_SHAPE.test(subject)) notes.push("The model did not answer as type(scope): subject; edit it.");
         if (notes.length) this.note = notes.join(" ");
       } catch (e) { if (id === this.aiGen) this.fail(cx, `AI commit message failed: ${e}`); }

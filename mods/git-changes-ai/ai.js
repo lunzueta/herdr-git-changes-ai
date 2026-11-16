@@ -146,19 +146,32 @@ export class AiCommit {
       "- describe the change, not its results or metrics.",
       retryHint ? "- " + retryHint : "",
     ].filter(Boolean).join(NL);
+    // An agent takes the whole prompt as one argument, so the diff gets what the system prompt,
+    // the instructions and the file list leave of the command line (8,191 bytes in cmd.exe).
+    const room = ai.provider === "agent"
+      ? Math.max(1000, AGENT_PROMPT_LIMIT - (system.length + head.length + 4 * NL.length))
+      : diff.length;
+    const cut = diff.length > room;
     // An agent CLI may print its plan before the answer: pick the line that is a subject, and the body under it.
-    const raw = await this.callModel(ai, system, head + NL + NL + diff);
+    const raw = await this.callModel(ai, system, head + NL + NL + (cut ? diff.slice(0, room) : diff));
     const subject = pickSubject(raw);
-    return { subject, body: subject ? pickBody(raw, subject) : "" };
+    return { subject, body: subject ? pickBody(raw, subject) : "", raw: String(raw), truncated: cut };
   }
 
   async runCli(command, args, options) {
-    try { return await exec(command, args, options); }
-    catch (e) {
-      if (!/program not found/i.test(String(e))) throw e;
-      const flat = args.map((a) => (typeof a === "string" && a.includes(NL) ? a.split(NL).join("⏎") : a));
-      try { return await exec(`${command}.cmd`, flat, options); } catch { throw e; }
+    // A bare name that spawns nothing is not the end. On Windows an npm-style CLI is a .cmd shim
+    // next to an extensionless shell script; a direct spawn finds neither. A batch file also
+    // cannot carry a line break, so the suffixed attempts get the prompt on one line (⏎ is the
+    // break). Any failure of the bare name falls through, whatever words the app uses for it.
+    const flat = args.map((a) => (typeof a === "string" && a.includes(NL) ? a.split(NL).join("⏎") : a));
+    let first = null;
+    try { return await exec(command, args, options); } catch (e) { first = e; }
+    if (!/\.[a-z0-9]+$/i.test(command)) {
+      for (const ext of [".cmd", ".bat", ".exe"]) {
+        try { return await exec(command + ext, flat, options); } catch { /* next suffix */ }
+      }
     }
+    throw first;
   }
 
   async callModel(ai, system, user) {
@@ -172,7 +185,11 @@ export class AiCommit {
       const args = ai.command ? [...ai.command.slice(1).map(String), prompt] : spec.print(prompt, ai.model || "");
       const r = await this.runCli(command, args, { timeout: 240000 });
       if (r.code !== 0) throw new Error(tail(r.stderr || r.stdout) || `${command} exited with code ${r.code}`);
-      return spec?.parse ? spec.parse(r.stdout) : r.stdout;
+      const out = spec?.parse ? spec.parse(r.stdout) : r.stdout;
+      // An empty stdout is not a model that had nothing to say: it is a CLI that never got the
+      // prompt (a shim that dropped the argument). Say so, or the panel reports an empty message.
+      if (!String(out ?? "").trim()) throw new Error(`${command} printed nothing${r.stderr?.trim() ? `: ${tail(r.stderr)}` : ""}`);
+      return out;
     }
     const messages = [{ role: "system", content: system }, { role: "user", content: user }];
     if (ai.provider === "anthropic") {

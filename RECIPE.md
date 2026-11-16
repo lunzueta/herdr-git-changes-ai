@@ -62,7 +62,12 @@ push are there too.
   the diff tabs), `openOverlay` (menus), `watchFolder`, `theme`, `notify`.
 - **Programs it runs:** `git`; for an agent provider, that agent's CLI in its
   non-interactive mode (`claude -p --output-format json`, `pi -p`, `codex exec`,
-  `gemini`, `copilot -p`), or any `"command"` from `settings.json`.
+  `gemini`, `copilot -p`), or any `"command"` from `settings.json`. A bare name
+  that does not spawn is tried again as `<name>.cmd`, `.bat`, `.exe`: on Windows
+  an npm-style CLI is a batch shim next to an extensionless shell script, and the
+  app's spawn finds neither. A batch file cannot carry a line break, so those
+  attempts get the prompt on one line with `⏎` where the breaks were; that is why
+  the agent prompt is capped at 7,600 characters including the instructions.
 - **Network:** none of its own. An API provider in `settings.json` (Anthropic,
   an OpenAI-compatible server, Ollama) is called with `fetch`; an agent uses its
   own login.
