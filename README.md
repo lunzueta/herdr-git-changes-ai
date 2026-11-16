@@ -24,8 +24,12 @@ covers. The AI part, `mods/git-changes-ai/ai.js`, is this fork's own code.
 
 ## Install
 
-Copy `mods/git-changes-ai/` into `~/.config/herdr-app/mods/`, then point a
-layout's `changes` block at it:
+Either copy `mods/git-changes-ai/` into `~/.config/herdr-app/mods/`, or download
+`git-changes-ai-<version>.zip` from the
+[releases](https://github.com/lunzueta/herdr-git-changes-ai/releases) and unzip
+it there: both leave `~/.config/herdr-app/mods/git-changes-ai/`.
+
+Then point a layout's `changes` block at it:
 
 ```json
 { "id": "changes", "type": "block", "content": { "mod": "git-changes-ai" } }
