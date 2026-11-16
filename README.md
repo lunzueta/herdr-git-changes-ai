@@ -46,6 +46,15 @@ Settings for the AI part are in `~/.config/herdr-app/settings.json`. With no
 `"ai"` section it asks the first agent installed on the machine, with the login
 that agent already has.
 
+## Big diffs
+
+An agent CLI gets the prompt as **one command-line argument**, and on Windows that argument tops out
+near 8,000 characters (`cmd.exe`), so a large change is cut. The mod keeps the heaviest files
+first, sends the **file list** whole (name, `+a −d`), and the grey note says how much of how much
+arrived — so the message can still name every file, even ones whose diff it never saw. Read it
+before committing. To send everything: commit in groups, or put an API provider under `"ai"` in
+`settings.json` (those get up to 60,000 characters).
+
 ## Development
 
 ```sh

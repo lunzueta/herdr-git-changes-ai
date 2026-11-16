@@ -113,8 +113,14 @@ the first installed agent writes the message.
   `menu.js` and `ai.js`; nothing on disk is keyed by them.
 - There is no keyboard command for the sparkles button and no `keys.json`: the
   panel registers no command, so the button is the only way in.
-- `npm test` (`tests/git.test.mjs`, `tests/ui.test.mjs`) is the check for the
-  render paths; `herdr-app check` never draws a row.
+- `npm test` (`tests/git.test.mjs`, `tests/ui.test.mjs`, `tests/ai.test.mjs`) is
+  the check for the render paths and the AI half; `herdr-app check` never
+  draws a row.
+- A big diff does not fit the argument: 7,600 characters go to an agent in
+  total (system prompt, instructions, file list and diff), so the heaviest
+  files go first and the file list is sent whole; the note gives the numbers.
+  API providers get 60,000 characters. `exec` has no `stdin`, so piping the
+  prompt instead of passing it as an argument is not an option.
 
 ## Done when
 

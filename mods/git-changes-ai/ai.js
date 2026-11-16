@@ -38,6 +38,14 @@ export function byWeight(diff) {
   return parts.map((part, i) => [weight(part), i, part]).sort((a, b) => b[0] - a[0] || a[1] - b[1]).map(([, , part]) => part).join("");
 }
 
+// The file list that goes with the diff, so the model knows every file even when the diff of the
+// last ones was cut. Past a limit the names stop and one line says how many are left.
+export function fileSummary(files, limit = 60) {
+  const lines = files.slice(0, limit).map((f) => `${f.path} (+${f.add || 0} −${f.del || 0})`);
+  if (files.length > limit) lines.push(`…and ${files.length - limit} more files`);
+  return lines.join(NL);
+}
+
 export function wrap72(line) {
   const indent = /^- /.test(line) ? "  " : "";
   const out = [];
@@ -155,7 +163,7 @@ export class AiCommit {
     // An agent CLI may print its plan before the answer: pick the line that is a subject, and the body under it.
     const raw = await this.callModel(ai, system, head + NL + NL + (cut ? diff.slice(0, room) : diff));
     const subject = pickSubject(raw);
-    return { subject, body: subject ? pickBody(raw, subject) : "", raw: String(raw), truncated: cut };
+    return { subject, body: subject ? pickBody(raw, subject) : "", raw: String(raw), truncated: cut, sent: cut ? room : diff.length, total: diff.length };
   }
 
   async runCli(command, args, options) {

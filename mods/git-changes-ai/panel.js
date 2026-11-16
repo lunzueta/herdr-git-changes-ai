@@ -19,7 +19,10 @@ import * as G from "./git.js";
 import { icon, menuHeight } from "./menu.js";
 import { showInTab, shownIn, shownSource, getLayout, setLayout } from "./diff.js";
 import { History } from "./history.js";
-import { AiCommit, byWeight, SUBJECT_SHAPE, AGENT_PROMPT_LIMIT } from "./ai.js";
+import { AiCommit, byWeight, fileSummary, SUBJECT_SHAPE, AGENT_PROMPT_LIMIT } from "./ai.js";
+
+// Thousands separators, for the note that says how much of the diff the model got.
+const fmtChars = (n) => Number(n || 0).toLocaleString("en-US");
 
 // The focused terminal's folder, or `props.folder` when opened as a pane on one repository.
 function location() {
@@ -675,7 +678,7 @@ export class Panel {
         const { diff, truncated } = await this.diffForAi(root, on, mode);
         // Only what this commit takes: staged files, or every tracked change for "commit -a".
         const inCommit = this.entries.filter((e) => (mode === "staged" ? e.staged !== "none" : !e.untracked));
-        const summary = inCommit.slice(0, 20).map((e) => `${e.path} (+${e.add || 0} −${e.del || 0})`).join("\n");
+        const summary = fileSummary(inCommit);
         // An agent takes the whole prompt as one argument, so the diff gets what the instructions leave.
         const budget = p.provider === "agent" ? Math.max(1000, AGENT_PROMPT_LIMIT - (summary.length + 900)) : diff.length;
         const cut = diff.length > budget, text = cut ? diff.slice(0, budget) : diff;
@@ -685,7 +688,7 @@ export class Panel {
         const ask = (hint) => this.ai.askFull(ai, text, hint, summary).then(
           (r) => { answer = r.raw || answer; return r; },
           (e) => { failed = e; return { subject: "", body: "", raw: "", truncated: false }; });
-        let { subject, body, truncated: cutByPrompt } = await ask(null);
+        let { subject, body, truncated: cutByPrompt, sent = 0, total = 0 } = await ask(null);
         if (!SUBJECT_SHAPE.test(subject)) {
           const fixed = await ask('Your answer was not a "type(scope): subject" line. Reply with only that line: one type from the list, a colon, then the subject.');
           if (SUBJECT_SHAPE.test(fixed.subject)) ({ subject, body } = fixed);
@@ -706,7 +709,12 @@ export class Panel {
         const full = body ? subject + "\n\n" + body : subject;
         this.editor.set_value(full); this.message = full;
         const notes = [];
-        if (truncated || cut || cutByPrompt) notes.push("The diff was cut to fit the model's input.");
+        if (truncated || cut || cutByPrompt) {
+          // Say how much was cut and what was not: the file list is whole, so the message can name
+          // files whose diff never arrived.
+          const got = cutByPrompt ? `${fmtChars(sent)} of ${fmtChars(total)} characters` : `${fmtChars(diff.length)} characters`;
+          notes.push(`The diff was cut to fit ${p.provider === "agent" ? "the one argument an agent CLI takes" : "the model's input"} (${got}${truncated ? ", after the 60,000-character limit" : ""}); the file list names ${inCommit.length} file${inCommit.length === 1 ? "" : "s"}.`);
+        }
         if (!SUBJECT_SHAPE.test(subject)) notes.push("The model did not answer as type(scope): subject; edit it.");
         if (notes.length) this.note = notes.join(" ");
       } catch (e) { if (id === this.aiGen) this.fail(cx, `AI commit message failed: ${e}`); }

@@ -92,7 +92,30 @@ await test("a small diff is sent whole", async () => {
   H.exec = call("fix(x): y\n");
   const r = await ai.askFull(agent, "diff --git a/x b/x\n+one\n", null, "");
   assert.equal(r.truncated, false);
+  assert.equal(r.sent, r.total, "nothing was cut, so as much went as there was");
   assert.ok(H.calls.at(-1)[1].at(-1).includes("+one"));
+});
+
+await test("a cut diff reports how much of how much went", async () => {
+  H.calls = [];
+  H.exec = call("feat(x): y\n");
+  const big = "diff --git a/x b/x\n" + "+line\n".repeat(4000);
+  const r = await ai.askFull(agent, big, null, "");
+  assert.equal(r.truncated, true);
+  assert.equal(r.total, big.length);
+  assert.ok(r.sent < r.total && r.sent > 1000, `sent ${r.sent} of ${r.total}`);
+});
+
+await test("the file list names every file, and counts the ones past the limit", async () => {
+  const twentyTwo = Array.from({ length: 22 }, (_, i) => ({ path: `f${i}.py`, add: 3, del: 1 }));
+  const text = AI.fileSummary(twentyTwo);
+  assert.equal(text.split("\n").length, 22, "all 22 named, no 'and more' line");
+  assert.ok(text.includes("f21.py (+3 −1)"));
+
+  const many = Array.from({ length: 65 }, (_, i) => ({ path: `g${i}.py`, add: 2, del: 0 }));
+  const capped = AI.fileSummary(many);
+  assert.match(capped, /…and 5 more files/);
+  assert.equal(capped.split("\n").length, 61, "60 names plus the line that counts the rest");
 });
 
 await test("a fenced answer still gives a subject and its body", async () => {
