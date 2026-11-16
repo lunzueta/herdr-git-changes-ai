@@ -1,0 +1,27 @@
+Git Changes + AI for Herdr
+Copyright (c) 2026 aBER (the base panel)
+
+The changes of this fork, and the AI parts (mods/git-changes-ai/ai.js), are
+under the same MIT license as the rest; they carry no separate copyright notice.
+
+This software is MIT-licensed (see LICENSE). Parts of it come from other
+projects under their own licenses:
+
+- mods/git-changes-ai/lanes.js, and the parts of history.js, git.js and menu.js
+  marked at their tops, are from herdr-git-graph
+  (https://github.com/rabeeh-ta/herdr-git-graph), MIT License,
+  Copyright (c) 2026 Rabeeh T A. See LICENSES/MIT-herdr-git-graph.txt.
+- The parts of panel.js, diff.js and git.js marked at their tops started as a
+  clone of the Changes mod shipped with Herdr (https://herdr.dev), Apache
+  License 2.0. See LICENSES/Apache-2.0.txt.
+- mods/git-changes-ai/icons are Lucide icons (https://lucide.dev), ISC License.
+  See LICENSES/ISC-Lucide.txt.
+
+mods/git-changes-ai/ai.js is this fork's own code, MIT-licensed with the rest.
+No part of it is under another license.
+
+Ideas, no code:
+- better-changes by Tawsif Aqib (https://github.com/munza/herdr-mods),
+  Apache License 2.0: the diff in one reusable tab of the main area, the
+  Tree/Flat and One/Two-column icon pairs, and two columns paired by position.
+- Zed's git panel (https://zed.dev): the panel's layout.

@@ -2,6 +2,10 @@ MIT License
 
 Copyright (c) 2026 aBER
 
+Parts of panel.js, diff.js and git.js come from the Changes mod shipped with
+Herdr (https://herdr.dev), Apache License 2.0: see LICENSES/Apache-2.0.txt and
+NOTICE for which file each license covers.
+
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
 in the Software without restriction, including without limitation the rights

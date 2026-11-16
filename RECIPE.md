@@ -46,9 +46,16 @@ push are there too.
 - **Base:** [aBER0724/herdr-git-changes](https://github.com/aBER0724/herdr-git-changes),
   MIT (`LICENSE`, `LICENSES/`). Its panel, diff tabs, history and stash are
   unchanged except where the AI part touches the commit box.
-- **AI part:** `mods/git-changes-ai/ai.js`, from
-  [ai-commit](https://github.com/lunzueta/ai-commit), 0BSD: the prompt, the
-  agent CLIs, the API providers, the model list, and the subject and body parsing.
+- **AI part:** `mods/git-changes-ai/ai.js`, this fork's own code (MIT, like the
+  rest): the prompt, the agent CLIs, the API providers, the model list, and the
+  subject and body parsing.
+- **Licenses to keep:** `LICENSE` (MIT: aBER for the base panel, this fork's
+  author for its changes and for `ai.js`), `LICENSES/` — `Apache-2.0.txt` for
+  the parts of `panel.js`, `diff.js` and `git.js` that started as Herdr's
+  shipped `changes` mod, `MIT-herdr-git-graph.txt` for `lanes.js` and the parts
+  of `history.js`, `git.js` and `menu.js` marked at their tops, `ISC-Lucide.txt`
+  for the icons — and `NOTICE`, which says which file each one covers. A rebuild
+  that drops these is not this mod.
 - **Herdr functions:** `exec` (git, and the agent CLIs), `readTextFile` and
   `appHome` (for `settings.json`), `knownAgents` (the agents installed here),
   `shared` / `setShared` (the chosen model), `run` (tab and pane commands for
@@ -94,6 +101,15 @@ the first installed agent writes the message.
 - Model menus show what each CLI reports; a long list is the CLI's catalog, not
   a wrong setup.
 - The sparkles button needs a staged or tracked change. With none it says so.
+- The shared keys are still `git-changes.pick`, `git-changes.view`,
+  `git-changes.layout` and `ai-commit.selected`, as in the base mod: this fork
+  and the original `git-changes` cannot be open in the same window, though the
+  folders do not clash. Renaming them is a string change in `panel.js`,
+  `menu.js` and `ai.js`; nothing on disk is keyed by them.
+- There is no keyboard command for the sparkles button and no `keys.json`: the
+  panel registers no command, so the button is the only way in.
+- `npm test` (`tests/git.test.mjs`, `tests/ui.test.mjs`) is the check for the
+  render paths; `herdr-app check` never draws a row.
 
 ## Done when
 

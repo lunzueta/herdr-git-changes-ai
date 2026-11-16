@@ -1,5 +1,5 @@
 // The AI half of the commit message: the agent or API that writes it, the model list, and
-// the subject/body that come back. Copied from ai-commit (0BSD) into this fork.
+// the subject/body that come back. This fork's own code, MIT with the rest.
 import { exec, readTextFile, appHome, shared, setShared, knownAgents } from "herdr";
 
 export const NL = String.fromCharCode(10);
