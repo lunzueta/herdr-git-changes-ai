@@ -116,6 +116,10 @@ the first installed agent writes the message.
 - `npm test` (`tests/git.test.mjs`, `tests/ui.test.mjs`, `tests/ai.test.mjs`) is
   the check for the render paths and the AI half; `herdr-app check` never
   draws a row.
+- Mods run in QuickJS: `toLocaleString()` there does not group digits (`5868`, not
+  `5,868`), so `fmtChars` does it with a regex. And the note line is drawn in
+  `t.ansi1` (salmon) for everything, which reads as a failure: an informational
+  note sets `noteInfo` and is drawn in `t.dim` instead.
 - A big diff does not fit the argument: 7,600 characters go to an agent in
   total (system prompt, instructions, file list and diff), so the heaviest
   files go first and the file list is sent whole; the note gives the numbers.

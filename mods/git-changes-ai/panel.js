@@ -22,7 +22,8 @@ import { History } from "./history.js";
 import { AiCommit, byWeight, fileSummary, SUBJECT_SHAPE, AGENT_PROMPT_LIMIT } from "./ai.js";
 
 // Thousands separators, for the note that says how much of the diff the model got.
-const fmtChars = (n) => Number(n || 0).toLocaleString("en-US");
+// Thousands separators by hand: mods run in QuickJS, where toLocaleString() does not group digits.
+export const fmtChars = (n) => String(Math.round(Number(n) || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 
 // The focused terminal's folder, or `props.folder` when opened as a pane on one repository.
 function location() {
@@ -181,7 +182,7 @@ export class Panel {
         if (done) notify({ title: done, level: "success", timeout: 3000 });
       } catch (e) {
         const message = String(e?.message ?? e);
-        if (this.contextVersion === version && key() === context) this.note = `${what} failed: ${message}`;
+        if (this.contextVersion === version && key() === context) { this.note = `${what} failed: ${message}`; this.noteInfo = false; }
         if (remote) notify({ title: `${what} failed`, body: message, level: "error" });
       } finally {
         this.busy = null;
@@ -192,7 +193,7 @@ export class Panel {
     cx.notify();
   }
 
-  fail(cx, message) { this.note = message; cx.notify(); }
+  fail(cx, message) { this.note = message; this.noteInfo = false; cx.notify(); }
   clearMessage() { this.message = ""; this.editor.set_value(""); this.amend = false; }
   mode() { return G.commitMode(this.entries); }
   suggestion() { return G.suggestMessage(this.entries); }
@@ -716,7 +717,7 @@ export class Panel {
           notes.push(`The diff was cut to fit ${p.provider === "agent" ? "the one argument an agent CLI takes" : "the model's input"} (${got}${truncated ? ", after the 60,000-character limit" : ""}); the file list names ${inCommit.length} file${inCommit.length === 1 ? "" : "s"}.`);
         }
         if (!SUBJECT_SHAPE.test(subject)) notes.push("The model did not answer as type(scope): subject; edit it.");
-        if (notes.length) this.note = notes.join(" ");
+        if (notes.length) { this.note = notes.join(" "); this.noteInfo = true; }
       } catch (e) { if (id === this.aiGen) this.fail(cx, `AI commit message failed: ${e}`); }
       finally { if (id === this.aiGen) { this.aiBusy = false; cx.notify(); } }
     });
@@ -820,7 +821,7 @@ export class Panel {
         .children(list)
         .when(!this.root, (el) => el.child(div().p(8).text_color(t.dim).child(this.error || (this.loading ? "Loading changes…" : "No folder"))))))
       .when(this.limited, (e) => e.child(div().px(12).py(4).text_size(11).text_color(t.dim).child(`Showing the first ${G.LIMIT.toLocaleString()} files`)))
-      .when(Boolean(this.note), (e) => e.child(div().id("note").px(10).py(6).flex_none().border_t(1).border_color(t.border).text_size(11).text_color(t.ansi1).cursor_pointer().tooltip("Click to dismiss")
+      .when(Boolean(this.note), (e) => e.child(div().id("note").px(10).py(6).flex_none().border_t(1).border_color(t.border).text_size(11).text_color(this.noteInfo ? t.dim : t.ansi1).cursor_pointer().tooltip("Click to dismiss")
         .on_click((_e, cx) => { this.note = null; cx.notify(); }).child(this.note)))
       .when(Boolean(this.root && this.branch), (e) => e.child(v_flex().flex_none().border_t(1).border_color(t.border).bg(t.chrome)
         .child(this.branchRow(t))

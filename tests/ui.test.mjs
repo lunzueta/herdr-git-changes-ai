@@ -123,7 +123,7 @@ H.spaces = [{ id: "sp1", name: "repo", active: true, machine: null, folder: repo
 H.panes = [{ pane: "p1", tab: "tb1", terminal: "t1", cwd: repo, focused: true }];
 H.focused = { space: "sp1", tab: "tb1", pane: "p1", terminal: "t1", cwd: repo };
 
-const { Panel } = await import(pathToFileURL(join(lib, "panel.js")).href);
+const { Panel, fmtChars } = await import(pathToFileURL(join(lib, "panel.js")).href);
 const { DiffView } = await import(pathToFileURL(join(lib, "diff.js")).href);
 const { Menu } = await import(pathToFileURL(join(lib, "menu.js")).href);
 
@@ -386,6 +386,16 @@ await test("a running commit keeps its target but cannot clear a later context's
     assert.equal(target.cwd, repo, "already-started work stays in A");
     assert.equal(panel.editor.value(), "new draft", "the old completion cannot clear the new draft");
   } finally { H.exec = realExec; }
+});
+
+await test("the cut note's numbers are grouped, and an info note is not drawn as an error", async () => {
+  // QuickJS, where mods run, has no Intl: toLocaleString() leaves 5868 as "5868".
+  assert.equal(fmtChars(5868), "5,868");
+  assert.equal(fmtChars(5741), "5,741");
+  assert.equal(fmtChars(487), "487");
+  assert.equal(fmtChars(1234567), "1,234,567");
+  assert.equal(fmtChars(undefined), "0");
+  assert.equal(fmtChars(null), "0");
 });
 
 rmSync(base, { recursive: true, force: true });
